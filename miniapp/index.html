@@ -1169,17 +1169,19 @@
   .qp-tr-item .q-tafsir-btn { margin-top:9px; }
   /* ландшафт: во весь экран, компактная шапка, крупный мусхаф */
   @media (orientation:landscape){
-    body.q-page-lock { overflow:hidden; }
-    .phone:has(#quranReader.active){ max-width:none; border-radius:0; }
-    body.q-page-lock #quranReader.active { position:fixed; top:0; left:0; right:0; height:var(--app-h,100dvh); max-height:var(--app-h,100dvh); display:flex; flex-direction:column; overflow:hidden; background:var(--qp-paper-bg,#fdfcf7); }
+    html:has(body.q-page-lock), body.q-page-lock { overflow:hidden; padding:0; background:var(--qp-paper-bg,#fdfcf7); }
+    body.q-page-lock::after, .phone:has(#quranReader.active)::before { display:none; }
+    .phone:has(#quranReader.active){ max-width:none; min-height:0; border:0; border-radius:0; box-shadow:none; background:var(--qp-paper-bg,#fdfcf7); }
+    body.q-page-lock #quranReader.active { position:fixed; inset:0; height:var(--app-h,100dvh); max-height:var(--app-h,100dvh); padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); box-sizing:border-box; display:flex; flex-direction:column; overflow:hidden; background:var(--qp-paper-bg,#fdfcf7); border:0; }
     body.q-page-lock #quranReader .qwrap { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; padding:0 !important; }
     body.q-page-lock #quranReader #qrAyahs { flex:1 1 auto; min-height:0; }
     body.q-page-lock #quranReader .qr-nav { display:none; }
     body.q-page-lock #quranReader .qr-head { display:none; }
-    body.q-page-lock #quranReader .q-page-settings { display:grid; }
+    body.q-page-lock #quranReader .q-page-settings { display:grid; right:calc(12px + env(safe-area-inset-right,0px)); }
     body.q-page-lock #quranReader #qrAyahs.qp-stage { overflow:hidden; touch-action:pan-y; }
+    body.q-page-lock #quranReader #qrAyahs.qp-stage.qp-land .qp-pane { padding-bottom:var(--tg-safe-bottom); box-sizing:border-box; }
   }
-  @media (min-width:481px){
+  @media (min-width:481px) and (orientation:portrait){
     body.q-page-lock #quranReader.active {
       top:22px; bottom:22px; left:14px; right:14px;
       height:auto; max-height:none; border:1px solid var(--line); box-sizing:border-box;
