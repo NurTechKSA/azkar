@@ -15,6 +15,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { checkInitData: verifyInitData } = require('./initdata');
 const https = require('https');
 const zlib = require('zlib');
 const cron = require('node-cron');
@@ -187,18 +188,8 @@ app.get('/api/approx-times', (req, res) => {
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 
-// проверка подписи Telegram WebApp initData
-function checkInitData(initData) {
-  if (!initData || !TOKEN) return null;
-  const url = new URLSearchParams(initData);
-  const hash = url.get('hash');
-  url.delete('hash');
-  const dcs = [...url.entries()].map(([k, v]) => `${k}=${v}`).sort().join('\n');
-  const secret = crypto.createHmac('sha256', 'WebAppData').update(TOKEN).digest();
-  const calc = crypto.createHmac('sha256', secret).update(dcs).digest('hex');
-  if (calc !== hash) return null;
-  try { return JSON.parse(url.get('user')); } catch { return null; }
-}
+// проверка подписи Telegram WebApp initData — срок и сравнение за постоянное время в initdata.js
+const checkInitData = (initData) => verifyInitData(initData, TOKEN);
 
 // регистрация геолокации пользователя (для персональных напоминаний)
 app.post('/api/location', (req, res) => {
