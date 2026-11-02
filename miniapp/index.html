@@ -7282,9 +7282,9 @@ https://azkar.nurtech.dev/app`);
     if(deck) return deck;
     wrap.className='q-ayahs qp-stage'+(QPREFS.tj?' q-tajweed':'');
     wrap.innerHTML='<div class="qp-deck">'
-      +'<div class="qp-pane" data-slot="prev">'+qPaperSkeleton()+'</div>'
-      +'<div class="qp-pane" data-slot="cur">'+qPaperSkeleton()+'</div>'
       +'<div class="qp-pane" data-slot="next">'+qPaperSkeleton()+'</div>'
+      +'<div class="qp-pane" data-slot="cur">'+qPaperSkeleton()+'</div>'
+      +'<div class="qp-pane" data-slot="prev">'+qPaperSkeleton()+'</div>'
       +'</div>';
     deck=wrap.querySelector('.qp-deck');
     qBindDeckGestures(wrap, deck);
@@ -7303,7 +7303,7 @@ https://azkar.nurtech.dev/app`);
     // класс таджвида обновляем на каждой отрисовке: дека строится один раз, а режим можно переключить
     const wrap=document.getElementById('qrAyahs');
     if(wrap) wrap.classList.toggle('q-tajweed', !!QPREFS.tj);
-    [[panes[0], n-1],[panes[1], n],[panes[2], n+1]].forEach(function(pair){
+    [[panes[0], n+1],[panes[1], n],[panes[2], n-1]].forEach(function(pair){
       const pane=pair[0], p=pair[1];
       if(!(p>=1&&p<=QP_TOTAL)){ qFillPane(pane, p, null, null); return; }
       const d=QURAN.pcache[p], nx=QURAN.pcache[p+1];
@@ -7339,15 +7339,16 @@ https://azkar.nurtech.dev/app`);
     const deck=qDeck(); if(!deck) return;
     QURAN._deckBusy=true;
     const w=deck.parentElement.clientWidth||1;
+    void deck.offsetWidth;
     deck.classList.add('qp-anim');
-    deck.style.setProperty('--qp-drag', (dir>0?-w:w)+'px');
+    deck.style.setProperty('--qp-drag', (dir>0?w:-w)+'px');
     const finish=function(){
       deck.removeEventListener('transitionend', finish);
       if(QURAN._deckTimer){ clearTimeout(QURAN._deckTimer); QURAN._deckTimer=null; }
       deck.classList.remove('qp-anim');
       deck.style.setProperty('--qp-drag','0px');
       const panes=qPanes();
-      if(dir>0) deck.appendChild(panes[0]); else deck.insertBefore(panes[2], panes[0]);   // перестановка узлов, DOM не пересобирается
+      if(dir>0) deck.insertBefore(panes[2], panes[0]); else deck.appendChild(panes[0]);   // перестановка узлов, DOM не пересобирается
       QURAN.curPage=n;
       qPaintDeck(n);
       qApplyPageMeta(n, QURAN.pcache[n]);
@@ -7383,7 +7384,7 @@ https://azkar.nurtech.dev/app`);
       }
       if(wrap.classList.contains('qp-land')&&e.cancelable) e.preventDefault();
       let d=dx;
-      const edge=(QURAN.curPage<=1&&dx>0)||(QURAN.curPage>=QP_TOTAL&&dx<0);
+      const edge=(QURAN.curPage<=1&&dx<0)||(QURAN.curPage>=QP_TOTAL&&dx>0);
       if(edge) d=dx*0.28;                                          // резина на краях
       deck.style.setProperty('--qp-drag', d+'px');
     };
@@ -7392,8 +7393,8 @@ https://azkar.nurtech.dev/app`);
       dragging=false; deck.style.willChange='';
       const dx=(e.clientX||sx)-sx, dt=Math.max(1,Date.now()-t0), v=Math.abs(dx)/dt;
       const go=(Math.abs(dx)>w*0.18)||v>0.35;
-      if(go && dx<0 && QURAN.curPage<QP_TOTAL){ deck.style.setProperty('--qp-drag','0px'); qDeckTurn(1); return; }
-      if(go && dx>0 && QURAN.curPage>1){ deck.style.setProperty('--qp-drag','0px'); qDeckTurn(-1); return; }
+      if(go && dx>0 && QURAN.curPage<QP_TOTAL){ qDeckTurn(1); return; }
+      if(go && dx<0 && QURAN.curPage>1){ qDeckTurn(-1); return; }
       deck.classList.add('qp-anim');
       deck.style.setProperty('--qp-drag','0px');
       setTimeout(function(){ deck.classList.remove('qp-anim'); }, 280);
