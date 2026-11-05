@@ -157,6 +157,26 @@ const app = express();
 app.use(express.json());
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
+// ---------- связь с crm.nurtech.dev (Ильнур, 05.11.2026) ----------
+// Версия, число подписчиков и ошибки сервера — в CRM (её бот пишет их в чат разработки). Без CRM_LINK_TOKEN молчит.
+// Версия — bot/.revision (пишет выкладчик перед сборкой) или REVISION из окружения.
+let crm = null;
+import('./crm-link.mjs').then(({ createCrmLink }) => {
+  let revision = process.env.REVISION || null;
+  try { revision = revision || fs.readFileSync(path.join(__dirname, '.revision'), 'utf8').trim() || null; } catch { /* локально файла нет */ }
+  crm = createCrmLink({ app: 'Azkar', revision, users: async () => ({ total: Object.keys(loadSubs()).length }) });
+  crm.boot();
+}).catch((e) => console.warn('[crm-link] не загрузился:', e?.message || e));
+const crmAlert = (e, where) => { if (crm && !(e?.code === 'ETELEGRAM' && /\b403\b/.test(e.message))) void crm.alert(e, { where }); };
+app.get('/api/crm/status', (req, res) => (crm ? crm.statusHandler(req, res) : res.status(404).json({ statusCode: 404 })));
+// Без своего обработчика Node падает на необработанном отказе обычного Promise, а отказ промиса бота (bluebird)
+// только печатает предупреждение. Так и оставляем — плюс отправка в CRM.
+process.on('unhandledRejection', (e, p) => {
+  crmAlert(e, 'unhandledRejection');
+  if (p instanceof Promise) { console.error(e); setTimeout(() => process.exit(1), 2000); }
+  else console.warn('Unhandled rejection', e?.stack || e);
+});
+
 // времена намаза на сегодня (ISO в UTC — клиент форматирует в свою зону)
 app.get('/api/times', (req, res) => {
   const { lat, lng, madhab } = req.query;
@@ -688,6 +708,9 @@ app.get('/api/mushaf-svg/:page', async (req, res) => {
 // Mini App живёт под /app, лендинг — на корне. API и health объявлены выше.
 app.use('/app', express.static(path.join(__dirname, '..', 'miniapp'), { extensions: ['html'], index: 'index.html' }));
 app.use('/', express.static(path.join(__dirname, '..', 'landing'), { extensions: ['html'], index: 'index.html' }));
+
+// Ошибки маршрутов (5xx) — в CRM; ответ — как раньше, стандартным обработчиком Express.
+app.use((err, req, res, next) => { if ((err?.status || err?.statusCode || 500) >= 500) crmAlert(err, `${req.method} ${req.path}`); next(err); });
 
 app.listen(PORT, () => console.log(`[web] Mini App + API на :${PORT}`));
 
